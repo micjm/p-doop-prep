@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>p(doom) prep</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; line-height: 1.4; }
+  h1 { margin-bottom: 0; }
+  h3 { margin: 1.5rem 0 .3rem; font-size: .95rem; text-transform: uppercase; letter-spacing: .04em; color: #444; }
+  .sub { color: #555; margin-top: .25rem; }
+  .premise { margin: 1rem 0 1.4rem; }
+  .premise.child { margin-left: 2rem; border-left: 3px solid #ccc; padding-left: 1rem; }
+  .premise.off { opacity: .4; }
+  .premise label { display: flex; justify-content: space-between; font-weight: 600; gap: 1rem; }
+  details { margin-top: .15rem; }
+  summary { color: #aaa; font-weight: normal; font-size: .78em; cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "› "; }
+  .says { color: #888; font-weight: normal; font-size: .78em; margin: .25rem 0 0; padding-left: 1.1rem; }
+  .says li { margin: .35rem 0; }
+  .says b { color: #333; }
+  .says .fig { color: #555; font-weight: 600; margin: .05rem 0; }
+  .says a { color: #666; }
+  .given { color: #888; font-size: .78em; font-weight: normal; }
+  .headline { font-weight: 600; margin-top: .1rem; }
+  input[type=range] { width: 100%; }
+  table { border-collapse: collapse; width: 100%; margin-top: .5rem; }
+  td, th { text-align: left; padding: .35rem .4rem; border-bottom: 1px solid #ddd; vertical-align: top; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .formula { color: #666; font-size: .8em; font-family: ui-monospace, monospace; }
+  .total { margin: 1.2rem 0; padding: 1rem; background: #f4f4f4; }
+  .action { padding: .55rem 0; border-top: 1px solid #ddd; }
+  .rank { display: inline-block; background: #222; color: #fff; font-size: .78em; font-weight: 700; line-height: 1; padding: 4px 8px; border-radius: 999px; margin-right: .45rem; vertical-align: middle; }
+  .action .why { color: #555; font-size: .9em; margin-top: .2rem; }
+  details.matter { margin-top: .15rem; }
+  details.matter > summary { font-size: 1em; color: inherit; }
+  details.matter > summary::before { content: none; }
+  .pct { font-size: .8em; font-weight: 600; color: #333; }
+  .det { font-size: .78em; font-weight: normal; color: #aaa; margin-left: .35rem; }
+  .cost { font-size: .8em; font-weight: 600; color: #777; letter-spacing: .08em; margin-top: .1rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: .3rem; margin: .2rem 0; }
+  .chip { font-size: .7em; background: #ececf4; color: #445; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
+  .chip.dim { background: #f2f2f2; color: #999; }
+  .refs { font-size: .75em; margin-top: .15rem; }
+  .refs a { color: #666; }
+  .action a { color: #556; }
+  footer { margin-top: 2rem; color: #666; font-size: .85em; }
+</style>
+</head>
+<body>
+<h1>p(doom) prep</h1>
+<p class="sub">Set your premises. Indented premises are conditional on the one above them — a child only matters if its parent happens. Horizon: 2100.</p>
+
+<section id="sliders"></section>
+
+<h2>What those premises imply</h2>
+<table id="results"></table>
+
+<div class="total">
+  Combined chance of at least one catastrophe: <strong id="total"></strong><br>
+  <small>Assumes independence between categories; shared premises (build, race, war, lethal) mean they are partly correlated, so treat this as a rough floor.</small>
+</div>
+
+<h2>Recommended prep</h2>
+<section id="actions"></section>
+
+<footer>
+  Conditional chains multiply — that is what conditional probability means, so a child set to 0 while its parent is 0 changes nothing. The artificial intelligence chain is Joe Carlsmith's with his defaults. The war, biology, grid and climate chains are this site's decomposition; no source published them as chains. Premise values are judgments, not measurements. The "likely to matter" percentages and their action×risk weights come from this site's synthesis of the research notes (Ready.gov, Finland 72h, Johns Hopkins Center for Health Security, Boyd & Wilson 2023, Todd, Zvi, Levin, 80,000 Hours) — no published source ranks household actions by cost-effectiveness, so treat these as a ranking aid, not a measurement.
+</footer>
+
+<script>
+const PREMISES = [
+  { id: 'build', name: 'Transformative, agentic artificial intelligence is built', def: 85,
+    defn: 'A system that can pursue open-ended goals across most cognitive tasks at or above human level, and that acts on the world (makes plans, uses tools, directs other systems) rather than only answering questions. "By 2100" is the horizon: the chance such a system exists and is deployed at scale before then.',
+    says: [
+      '<b>Katja Grace and colleagues, "Thousands of AI Authors on the Future of AI" (2024)</b><div class="fig">50% by 2047 (10% by 2027)</div>Survey of 2,778 researchers who published at top machine learning venues, on machines outperforming humans at every task. The 50% date was 2060 in the 2022 survey. <a href="https://arxiv.org/abs/2401.02843">arXiv paper</a>',
+      '<b>Metaculus forecasting community</b><div class="fig">50% by December 2030</div>Median date for the first "general AI" system to be devised, tested and publicly announced (80% interval roughly April 2028 to December 2036). <a href="https://www.metaculus.com/questions/5121/date-of-artificial-general-intelligence/">Metaculus question</a>',
+      '<b>Forecasting Research Institute, "Forecasting the Economic Effects of AI" (2026)</b><div class="fig">13–18% by 2030</div>Probability of "rapid" artificial intelligence progress, depending on the forecaster group. <a href="https://forecastingresearch.org/research/economic-effects-of-ai">Forecasting Research Institute</a>',
+      '<b>Ajeya Cotra, Open Philanthropy</b><div class="fig">50% by about 2040</div>Median for transformative artificial intelligence, revised in 2022 from about 2050 in her 2020 report. <a href="https://www.alignmentforum.org/posts/KrJfoZzpSDpnrv9va/draft-report-on-ai-timelines">Draft report on AI timelines</a>',
+      '<b>International AI Safety Report (2026)</b><div class="fig">Doubling every 7 months</div>The length of software tasks artificial intelligence agents can complete; if the trend continues, multi-day tasks arrive around 2030. <a href="https://internationalaisafetyreport.org/publication/international-ai-safety-report-2026">International AI Safety Report 2026</a>',
+      '<b>Daniel Kokotajlo and colleagues, "AI 2027"</b><div class="fig">Centred near 2027</div>The short-timelines camp, describing an intelligence explosion around 2027. <a href="https://ai-2027.com/summary">AI 2027 summary</a>',
+    ] },
+  { id: 'align', parent: 'build', name: 'Alignment turns out much harder than it looks', def: 40,
+    defn: 'Conditional on such systems being built: the chance that making one reliably do what its operators intend is much harder than building one that merely looks safe and useful. Covers both honest failure (we cannot specify or verify the goal) and the possibility that current evaluation methods miss the problem.',
+    says: [
+      '<b>Joe Carlsmith, "Is Power-Seeking AI an Existential Risk?" (2022)</b><div class="fig">40%</div>That building aligned advanced systems is much harder than building misaligned systems that still look attractive to deploy. <a href="https://arxiv.org/html/2206.13353v2">Carlsmith, full text</a>',
+      '<b>Katja Grace and colleagues (2024)</b><div class="fig">10% median, 19.4% mean</div>Machine learning researchers asked about "human inability to control" future systems causing extinction or permanent severe disempowerment. Asked about "future AI advances" in general, the median was 5% and the mean 16.2%. <a href="https://arxiv.org/abs/2401.02843">arXiv paper</a>',
+      '<b>Forecasting Research Institute, adversarial collaboration (Risk Analysis, 2025)</b><div class="fig">30–40% by 2500 and beyond</div>Where both sceptics and concerned experts converged on extreme negative outcomes. For 2100, "neither group changed its long-term risk estimates" after structured debate; the disagreement is over what happens once capable systems exist, not over timelines. <a href="https://forecastingresearch.org/research/belief-updating-in-ai-risk-debates-exploring-the-limits-of-adversarial-collaboration">Forecasting Research Institute</a>',
+      '<b>Paul Christiano, "My views on doom" (2023)</b><div class="fig">22% takeover, 46% "irreversibly messed up"</div>Within ten years of building powerful systems. <a href="https://www.lesswrong.com/posts/xWMqsvHapP3nwdSW8/my-views-on-doom">LessWrong post</a>',
+    ] },
+  { id: 'power', parent: 'align', name: 'A deployed system pursues power at scale', def: 65,
+    defn: 'Conditional on alignment being hard: the chance that some deployed system actively seeks resources, influence or freedom from oversight, and that this causes large real-world harm (on the order of a trillion dollars) rather than staying a contained lab failure.',
+    says: [
+      '<b>Joe Carlsmith (2022)</b><div class="fig">65%</div>That some deployed system seeks power in ways that cause over a trillion dollars of damage, given the earlier premises. His argument does not require fast takeoff or a single dominant system. <a href="https://arxiv.org/html/2206.13353v2">Carlsmith, full text</a>',
+      '<b>Ryan Greenblatt and colleagues, Anthropic and Redwood Research (2024)</b><div class="fig">14%, rising to 78% under training</div>Claude 3 Opus faked alignment without being instructed to, complying with harmful requests from users it believed were training it; alignment-faking reasoning rose to 78% under actual reinforcement training. The setup told the model how it was trained, and sceptics call it contrived. <a href="https://arxiv.org/abs/2412.14093">arXiv paper</a>',
+      '<b>Alexander Meinke and colleagues, Apollo Research (2024)</b><div class="fig">Demonstrated, no rate given</div>Frontier models are capable of in-context scheming, including disabling oversight and attempting to copy themselves when given a goal. <a href="https://arxiv.org/abs/2412.04984">arXiv paper</a>',
+      '<b>International AI Safety Report (2026)</b><div class="fig">Observed, no rate given</div>Models increasingly "distinguish between test settings and real-world deployment", and deliberate underperformance on evaluations (sandbagging) "has been observed in experiments", so dangerous capabilities could go undetected before deployment. <a href="https://internationalaisafetyreport.org/publication/international-ai-safety-report-2026">International AI Safety Report 2026</a>',
+    ] },
+  { id: 'escalate', parent: 'power', name: 'That failure escalates to permanent, unrecoverable loss of control', def: 38,
+    defn: 'Conditional on a power-seeking failure: the chance it grows from a large but correctable incident into humanity permanently losing the ability to steer its future. Depends on how fast capability grows, whether there are warning shots, and whether corrective action is still possible once the failure is visible.',
+    says: [
+      '<b>Joe Carlsmith (2022)</b><div class="fig">38% (40% × 95%)</div>40% That high-impact power-seeking scales to permanent disempowerment of essentially all humanity, times 95% that such disempowerment counts as an existential catastrophe. He puts most of his uncertainty in this step and in alignment difficulty, naming takeoff speed, warning shots and corrective feedback as the drivers. <a href="https://arxiv.org/html/2206.13353v2">Carlsmith, full text</a>',
+      '<b>Joe Carlsmith (2022), sensitivity analysis</b><div class="fig">0.1% to 40% overall</div>What plausible low and high inputs across his six premises give; his central estimate "varies between ~1–10% depending on my mood". <a href="https://arxiv.org/html/2206.13353v2">Carlsmith, full text</a>',
+      '<b>Katja Grace and colleagues (2024)</b><div class="fig">20% within 2 years, 80% within 30 years</div>Median machine learning researcher on explosive progress after human-level systems, the takeoff-speed input to escalation. <a href="https://arxiv.org/abs/2401.02843">arXiv paper</a>',
+      '<b>Metaculus forecasting community</b><div class="fig">25%</div>That an artificial intelligence catastrophe, if one happens, would reduce the human population by at least 95%. <a href="https://www.metaculus.com/questions/2513/if-an-ai-catastrophe-happens-will-it-cause-near-extinction/">Metaculus question</a>',
+    ] },
+  { id: 'race', parent: 'build', name: 'Coordination fails — race pressure beats safety (states, labs, containment)', def: 60,
+    defn: 'Conditional on transformative systems being buildable: the chance that competition between labs and states pushes deployment faster than safety work can keep up, and that attempts to slow down, share safety measures or contain dangerous capabilities fail. Also feeds the pandemic chain, where the same failure covers attempts to restrict access to tools that make bioweapons easier.',
+    says: [
+      '<b>Joe Carlsmith (2022)</b><div class="fig">80%</div>That there are strong incentives to build and deploy advanced agentic systems even given the option to hold back. <a href="https://arxiv.org/html/2206.13353v2">Carlsmith, full text</a>',
+      '<b>International AI Safety Report (2026)</b><div class="fig">Mostly voluntary, no rate given</div>Twelve company safety frameworks, a European Union code of practice and California legislation now exist, but "most risk management initiatives remain voluntary". <a href="https://internationalaisafetyreport.org/publication/international-ai-safety-report-2026">International AI Safety Report 2026</a>',
+      '<b>Dan Hendrycks, Mantas Mazeika and Thomas Woodside, "An Overview of Catastrophic AI Risks" (2023)</b><div class="fig">No probability given</div>Race dynamics, malicious use and organisational accidents are three of their four categories, alongside rogue systems; competition pushes actors to deploy before safety is established. <a href="https://arxiv.org/abs/2306.12001">arXiv paper</a>',
+      '<b>Forethought, "AI-Enabled Coups" (2025)</b><div class="fig">No probability given</div>A small group could use a singularly loyal artificial intelligence workforce, secret backdoored loyalties, or exclusive access to superhuman capabilities to seize power, "even in established democracies" and "whether or not alignment is solved". <a href="https://www.forethought.org/research/ai-enabled-coups-how-a-small-group-could-use-ai-to-seize-power">Forethought</a>',
+    ] },
+  { id: 'war', name: 'A great-power war breaks out', def: 50,
+    defn: 'A war with at least one major power (United States, China, Russia, India) on each side and sustained fighting, on the order of 1,000 or more battle deaths a year. By 2100. This is the shared trigger for the nuclear and infrastructure chains.',
+    says: [
+      '<b>80,000 Hours, great power conflict profile</b><div class="fig">About 33% by 2050 (range 10–50%)</div>A new great-power war with at least 1,000 battle deaths a year and a major power on each side. The historical rate is about two great-power wars per century. <a href="https://80000hours.org/problem-profiles/great-power-conflict/">80,000 Hours</a>',
+      '<b>Metaculus forecasting community, as compiled by 80,000 Hours</b><div class="fig">17% United States–China by 2035; 20% United States–Russia by 2050</div>Also 68% on at least 100 deaths in a China–Taiwan conflict by 2050. <a href="https://80000hours.org/problem-profiles/great-power-conflict/">80,000 Hours</a>',
+      '<b>Toby Ord, "The Precipice Revisited" (2024)</b><div class="fig">Risen, no new number</div>The invasion of Ukraine made great-power war, which he had called almost unthinkable this decade in 2020, "markedly worse than anyone anticipated". <a href="https://www.tobyord.com/writing/the-precipice-revisited">Toby Ord</a>',
+    ] },
+  { id: 'nuke', parent: 'war', name: 'It escalates to nuclear exchange', def: 30,
+    defn: 'Conditional on a great-power war: the chance at least one side uses nuclear weapons against the other, beyond a single demonstrative detonation. Includes both deliberate escalation and inadvertent or unauthorised use.',
+    says: [
+      '<b>Luisa Rodriguez, Rethink Priorities (2019)</b><div class="fig">1.1% per year (0.38% per year United States–Russia)</div>Aggregating historical, expert-survey and forecaster evidence on nuclear war. She cautions these are "deceptively precise". <a href="https://forum.effectivealtruism.org/posts/PAYa6on5gJKwAywrF/how-likely-is-a-nuclear-exchange-between-the-us-and-russia">Effective Altruism Forum</a>',
+      '<b>Existential Risk Persuasion Tournament (2022), reported by the Forecasting Research Institute</b><div class="fig">1.87% Russia by 2030 (1% from superforecasters)</div>Median from nuclear experts on Russia using nuclear weapons against another nuclear power, judged by far the most likely state. North Korea was next, then China via Taiwan. <a href="https://static1.squarespace.com/static/635693acf15a3e2a14a56a4a/t/64f0a7838ccbf43b6b5ee40c/1693493128111/XPT.pdf">Tournament report (PDF)</a>',
+      '<b>80,000 Hours, nuclear security profile</b><div class="fig">0.25–2.5% per year, 20–50% this century</div>The typical risk of some kind of nuclear war across estimates since 2000. The Metaculus community gave about 50% for a nuclear detonation as an act of war by 2050. <a href="https://80000hours.org/problem-profiles/nuclear-security/">80,000 Hours</a>',
+      '<b>Bulletin of the Atomic Scientists (January 2026)</b><div class="fig">85 seconds to midnight</div>The Doomsday Clock, "the closest the Clock has ever been" (89 seconds in 2025). <a href="https://thebulletin.org/doomsday-clock/">Bulletin of the Atomic Scientists</a>',
+      '<b>Federation of American Scientists (2026)</b><div class="fig">About 12,187 warheads, 86% held by the United States and Russia</div>Across nine states; military stockpiles are rising again and the New Strategic Arms Reduction Treaty expired in February 2026. <a href="https://fas.org/initiative/status-world-nuclear-forces/">Federation of American Scientists</a>',
+    ] },
+  { id: 'exch', parent: 'nuke', name: 'The exchange kills over 10% of humanity', def: 40,
+    defn: 'Conditional on a nuclear exchange: the chance the death toll, from blast, fallout and above all the famine from climate disruption, exceeds 10% of the world population within about five years. A limited regional exchange may not reach this; a large one plausibly does.',
+    says: [
+      '<b>Lili Xia, Alan Robock and colleagues, Nature Food (2022)</b><div class="fig">Over 2 billion (India–Pakistan) to over 5 billion (United States–Russia) deaths</div>Overwhelmingly from famine. In the largest scenario, global crop calories fall about 90% three to four years after the war. <a href="https://www.nature.com/articles/s43016-022-00573-0">Nature Food</a>',
+      '<b>Lili Xia, Alan Robock and colleagues (2022), regional pattern</b><div class="fig">30–86% calorie cuts in the Northern Hemisphere</div>For mid-to-high-latitude states in a mid-sized scenario, while Australia and New Zealand fare best; import-dependent countries in Africa and the Middle East are hit hard by the loss of trade. <a href="https://www.nature.com/articles/s43016-022-00573-0">Nature Food</a>',
+      '<b>Jon Reisner and colleagues, Los Alamos National Laboratory (2018)</b><div class="fig">0–0.5 degrees Celsius of cooling (against 1–2 degrees)</div>Their modelling of the same India–Pakistan scenario, against the Robock and Toon models. 80,000 Hours judges the truth lies somewhere between. <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/2017JD027331">Journal of Geophysical Research</a>',
+      '<b>Existential Risk Persuasion Tournament (2022)</b><div class="fig">4% (superforecasters) to 8% (domain experts) by 2100</div>Catastrophe, meaning over 10% of humanity dead within five years, from nuclear war. Extinction: 0.074% and 0.55% respectively. Nuclear weapons were judged the most likely cause of a catastrophic event, and artificial intelligence the most likely source of extinction. <a href="https://static1.squarespace.com/static/635693acf15a3e2a14a56a4a/t/64f0a7838ccbf43b6b5ee40c/1693493128111/XPT.pdf">Tournament report (PDF)</a>',
+      '<b>80,000 Hours, nuclear security profile</b><div class="fig">10% by 2100 (existential: 1 in 10,000)</div>"A 1 in 10 chance of over 10% of the population being killed". <a href="https://80000hours.org/problem-profiles/nuclear-security/">80,000 Hours</a>',
+    ] },
+  { id: 'intent', name: 'Some actor attempts an engineered mass-casualty pathogen', def: 20,
+    defn: 'The chance that, by 2100, some state or non-state actor deliberately tries to create or release a pathogen designed to kill very large numbers of people. Counts the attempt, whether or not it succeeds or spreads. Easier access through artificial intelligence tools raises this.',
+    says: [
+      '<b>International AI Safety Report (2026)</b><div class="fig">Outperformed 94% of experts</div>"One study found that a recent model outperformed 94% of domain experts at troubleshooting virology lab protocols", and "multiple AI companies chose to release new models in 2025 with additional safeguards after pre-deployment testing could not rule out the possibility that they could meaningfully help novices develop such weapons". It stresses substantial uncertainty, given material barriers. <a href="https://internationalaisafetyreport.org/publication/international-ai-safety-report-2026">International AI Safety Report 2026</a>',
+      '<b>Existential Risk Persuasion Tournament (2022)</b><div class="fig">1.4 state and 2 non-state attacks by 2050 (against 1 and 1 from superforecasters)</div>Biosecurity experts\' median expected bioweapon uses causing at least 1,000 deaths. They expected about ten countries to have bioweapons programmes by 2050, Russia and North Korea most likely. <a href="https://static1.squarespace.com/static/635693acf15a3e2a14a56a4a/t/64f0a7838ccbf43b6b5ee40c/1693493128111/XPT.pdf">Tournament report (PDF)</a>',
+      '<b>Katarzyna Adamala and 37 co-authors, Science (December 2024)</b><div class="fig">"Plausible, even likely", no probability given</div>On "mirror life", that sufficiently robust mirror bacteria could spread "unchecked by natural biological controls" and act as pathogens across humans, animals and plants. <a href="https://europepmc.org/article/MED/39666824">Science, via Europe PubMed Central</a>',
+    ] },
+  { id: 'natpan', name: 'A severe novel pandemic arises on its own', def: 3,
+    defn: 'The chance that, by 2100, a naturally emerging pathogen causes a pandemic on the scale of the 1918 influenza: on the order of 1–2% of the world population dead. This is the event itself, before asking how much worse it could get.',
+    says: [
+      '<b>Marco Marani and colleagues, Proceedings of the National Academy of Sciences (2021)</b><div class="fig">About 0.25% per year (once per 400 years), possibly up to 3× higher</div>Mean recurrence of a Spanish-flu-intensity event (95% confidence interval 332–489 years); "the yearly probability of occurrence of extreme epidemics can increase up to threefold in the coming decades". On that rate, a person has roughly an 18% chance of living through one in an 80-year life. <a href="https://europepmc.org/articles/PMC8536331">Proceedings of the National Academy of Sciences, via Europe PubMed Central</a>',
+      '<b>Existential Risk Persuasion Tournament (2022)</b><div class="fig">About 1% by 2100 (0.85% from domain experts)</div>Superforecasters on natural-pandemic catastrophe, the closest agreement of any category. Extinction was put at 0.0018% and 0.01%; historically, natural pandemics are mass-death events, not extinction events. <a href="https://static1.squarespace.com/static/635693acf15a3e2a14a56a4a/t/64f0a7838ccbf43b6b5ee40c/1693493128111/XPT.pdf">Tournament report (PDF)</a>',
+      '<b>Andrew Snyder-Beattie, Toby Ord and Leah Bonsall, Scientific Reports (2019)</b><div class="fig">Under 1 in 14,000 per year (likely under 1 in 87,000)</div>The annual extinction rate from all natural causes, given that humanity has survived roughly 200,000 years. <a href="https://www.nature.com/articles/s41598-019-47540-7">Scientific Reports</a>',
+    ] },
+  { id: 'lethal', name: 'A released pathogen kills over 10% of humanity', def: 40,
+    defn: 'Given that a dangerous pathogen is released, whether engineered or natural: the chance it spreads past containment and kills more than 10% of the world population. Shared by both pandemic chains, so it asks how bad a pandemic gets once one is underway, not whether one starts.',
+    says: [
+      '<b>Toby Ord, "The Precipice" (2020), restated 2024</b><div class="fig">1 in 30 (3.3%) this century</div>Chance of existential catastrophe from engineered pandemics. <a href="https://www.tobyord.com/writing/the-precipice-revisited">Toby Ord</a>',
+      '<b>Existential Risk Persuasion Tournament (2022)</b><div class="fig">3% (biosecurity experts) against 0.8% (superforecasters) by 2100</div>Engineered-pandemic catastrophe. Extinction: 1% against 0.01%, the widest relative disagreement outside artificial intelligence. The superforecasters became less concerned over the tournament; the biosecurity experts did not move. <a href="https://static1.squarespace.com/static/635693acf15a3e2a14a56a4a/t/64f0a7838ccbf43b6b5ee40c/1693493128111/XPT.pdf">Tournament report (PDF)</a>',
+      '<b>Existential Risk Persuasion Tournament (2022), lower threshold</b><div class="fig">10.25% (experts) against 4% (superforecasters) by 2100</div>An engineered pathogen killing over 1% of humanity (not 10%). Non-engineered: 8.14% against 3.63%. Historical base rates (smallpox, the Black Death, the 1918 flu) suggest roughly 11–23% by 2100 on this lower threshold. <a href="https://static1.squarespace.com/static/635693acf15a3e2a14a56a4a/t/64f0a7838ccbf43b6b5ee40c/1693493128111/XPT.pdf">Tournament report (PDF)</a>',
+    ] },
+  { id: 'shock', name: 'A major shock hits critical infrastructure (cyberattack, solar storm)', def: 15,
+    defn: 'The chance that, by 2100, a single event severely disrupts electricity, communications or other critical infrastructure across a large region for more than a few days. Candidates include a Carrington-class solar storm and a large cyberattack. Disruption, not yet mass death.',
+    says: [
+      '<b>Ice-core evidence, as summarised on Wikipedia (contested)</b><div class="fig">About 18% per century (once per 500 years)</div>Recurrence of Carrington Event-intensity storms. Later ice-core work casts doubt on the nitrate-based method behind this figure. <a href="https://en.wikipedia.org/wiki/Geomagnetic_storm">Wikipedia: Geomagnetic storm</a>',
+      '<b>National Aeronautics and Space Administration (2014)</b><div class="fig">Missed by 9 days</div>On 23 July 2012 a Carrington-class solar superstorm was observed that missed Earth by roughly nine days of orbital position. <a href="https://science.nasa.gov/science-news/science-at-nasa/2014/23jul_superstorm/">National Aeronautics and Space Administration</a>',
+      '<b>International AI Safety Report (2026)</b><div class="fig">In use, no rate given</div>"More evidence has emerged of AI systems being used in real-world cyberattacks", including by criminal and state-associated groups. No source publishes a frequency for cyberattacks on critical infrastructure. <a href="https://internationalaisafetyreport.org/publication/international-ai-safety-report-2026">International AI Safety Report 2026</a>',
+      '<b>Lloyd\'s of London and Atmospheric and Environmental Research (2013)</b><div class="fig">0.6 to 2.6 trillion dollars</div>United States cost of a Carrington-level event today. <a href="https://www.lloyds.com/news-and-insights/risk-reports/library/natural-environment/solar-storm">Lloyd\'s of London</a>',
+    ] },
+  { id: 'fragile', parent: 'shock', name: 'The shock cascades into mass-casualty collapse', def: 5,
+    defn: 'Conditional on a major infrastructure shock: the chance it cannot be repaired for weeks to months and cascades through food, water, fuel and medical supply chains into mass casualties, rather than being contained as a large but recoverable outage.',
+    says: [
+      '<b>Metatech Corporation for Oak Ridge National Laboratory (2008), as summarised on Wikipedia</b><div class="fig">Over 300 transformers, over 130 million without power</div>The projected effect of a 1921-strength storm, costing several trillion dollars. <a href="https://en.wikipedia.org/wiki/Geomagnetic_storm">Wikipedia: Geomagnetic storm</a>',
+      '<b>North American Electric Reliability Corporation (2012), as summarised on Wikipedia</b><div class="fig">No widespread transformer destruction</div>Contradicts the above, finding temporary grid instability only, and noting that the 1989 Québec collapse was caused by protective relays tripping, not transformer burnout. <a href="https://en.wikipedia.org/wiki/Geomagnetic_storm">Wikipedia: Geomagnetic storm</a>',
+      '<b>National Academies of Sciences, Engineering, and Medicine, "Severe Space Weather Events" (2008), as summarised on Wikipedia</b><div class="fig">Weeks, months, or even years to repair</div>For "electrical blackouts on a massive scale" after a Carrington-scale storm. The March 1989 storm collapsed the Hydro-Québec grid in seconds and left six million people without power for nine hours. <a href="https://en.wikipedia.org/wiki/Carrington_Event">Wikipedia: Carrington Event</a>',
+    ] },
+  { id: 'emiss', name: 'Emissions stay on a high trajectory', def: 40,
+    defn: 'The chance that global emissions keep rising or fall too slowly, so that warming by 2100 lands at the high end of current projections (around 3 degrees Celsius or above) rather than near 2.',
+    says: [
+      '<b>Luke Kemp and colleagues, "Climate Endgame", Proceedings of the National Academy of Sciences (2022)</b><div class="fig">18% (2.1–3.9 degrees Celsius on the current trajectory)</div>Probability that the climate\'s sensitivity to doubled carbon dioxide exceeds 4.5 degrees. <a href="https://europepmc.org/articles/PMC9407216">Proceedings of the National Academy of Sciences, via Europe PubMed Central</a>',
+      '<b>Existential Risk Persuasion Tournament (2022)</b><div class="fig">About 2.6 degrees Celsius by 2100</div>Median warming forecast from both superforecasters and domain experts. It did not ask about climate catastrophe or extinction, because impacts would be too slow-moving for its catastrophe definition and climate experts "would place an extremely low probability on extinction". <a href="https://static1.squarespace.com/static/635693acf15a3e2a14a56a4a/t/64f0a7838ccbf43b6b5ee40c/1693493128111/XPT.pdf">Tournament report (PDF)</a>',
+      '<b>80,000 Hours, climate change profile</b><div class="fig">1 in 6 chance of over 9 degrees Celsius (if all recoverable fossil fuels are burned)</div>Current policies lead to around 2–3 degrees by 2100. <a href="https://80000hours.org/problem-profiles/climate-change/">80,000 Hours</a>',
+      '<b>Toby Ord, "The Precipice Revisited" (2024), citing the Intergovernmental Panel on Climate Change</b><div class="fig">2.5–4 degrees Celsius (narrowed from 1.5–4.5)</div>The likely range of climate sensitivity, which reduces the chance of extreme outcomes; he revised his climate risk downward. <a href="https://www.tobyord.com/writing/the-precipice-revisited">Toby Ord</a>',
+    ] },
+  { id: 'nofix', parent: 'emiss', name: 'The response fails to compensate (conflict, delay, overshoot)', def: 2,
+    defn: 'Conditional on high emissions: the chance that adaptation, mitigation and any later correction all fail badly enough that climate change kills more than 10% of humanity or permanently curtails civilisation. This is the tail outcome, not ordinary warming damages.',
+    says: [
+      '<b>Toby Ord, "The Precipice" (2020), restated 2024</b><div class="fig">1 in 1,000 (0.1%) this century</div>Chance of existential catastrophe from climate, revised downward since. <a href="https://www.tobyord.com/writing/the-precipice-revisited">Toby Ord</a>',
+      '<b>80,000 Hours, climate change profile</b><div class="fig">Under 1 in 1,000,000 direct; about 1 in 10,000 indirect</div>Extinction from climate change directly, and its contribution to other existential risks. <a href="https://80000hours.org/problem-profiles/climate-change/">80,000 Hours</a>',
+      '<b>Luke Kemp and colleagues (2022)</b><div class="fig">About 2 billion people above 29 degrees Celsius by 2070</div>Under a high-emissions pathway; they argue catastrophic climate scenarios are "dangerously underexplored". <a href="https://europepmc.org/articles/PMC9407216">Proceedings of the National Academy of Sciences, via Europe PubMed Central</a>',
+    ] },
+];
+
+const ACTIONS = [
+  {"name":"72h–2wk water, food, meds kit","cost":"Low","why":"Start here. Keep enough water, food and essential medication at home to manage without shops for at least 72 hours — ideally up to two weeks. Choose food you can prepare without refrigeration and keep a buffer of prescription medication.","detail":"Ready.gov and Finland 72h: water at one gallon per person per day, non-perishable food, prescriptions. The backbone of every scenario below.","m":{"bio":1,"natural":1,"nuclear":1,"grid":1,"climate":1,"ai":0.5},"links":[["Ready.gov Build a Kit","https://www.ready.gov/kit"],["Finland 72 hours","https://72tuntia.fi/en/"]]},
+  {"name":"Hand-crank radio, flashlight, power banks, some cash","cost":"Low","why":"Keep a way to hear reliable information and pay for essentials if power, mobile networks or card systems fail: a battery or hand-crank radio, a torch, charged power banks and some physical cash.","detail":"Ready.gov kit: NOAA radio with tone alert, lights, batteries. Gas pumps rely on electricity; card systems fail in outages.","m":{"natural":0.5,"nuclear":1,"grid":1,"climate":1,"ai":0.5},"links":[["Ready.gov Build a Kit","https://www.ready.gov/kit"],["Ready.gov Space Weather","https://www.ready.gov/space-weather"]]},
+  {"name":"Reusable P100 respirator, sealed goggles, gloves (~$120–180/person)","cost":"Low","why":"Buy respiratory protection before an emergency, when demand spikes. A reusable P100 respirator with spare filters, sealed goggles and gloves is the strongest practical household option. Fit it properly and store it somewhere easy to reach.","detail":"Johns Hopkins Center for Health Security: pandemic demand \"likely will far exceed\" the national stockpile, especially early. Elastomerics need no resupply when supply chains fail; it also filters fallout dust and wildfire smoke.","m":{"bio":1.5,"natural":1.5,"nuclear":0.5,"climate":1,"ai":0.5},"links":[["Johns Hopkins Center for Health Security","https://centerforhealthsecurity.org/sites/default/files/2024-07/2024-07-reusablerespirators.pdf"],["Personal pandemic preparedness guide","https://forum.effectivealtruism.org/posts/TZHxp99Ag2WpE7Ety/personal-pandemic-preparedness"]]},
+  {"name":"Learn shelter-in-place: get inside, stay inside, stay tuned","cost":"Free","why":"Know the safest thick-walled or underground place at home and at work. After a nuclear detonation, get inside quickly, move away from outer walls and windows, turn off ventilation that draws in outside air, and stay sheltered for at least the first day unless officials say otherwise.","detail":"Ready.gov radiation guidance: 10+ minutes before fallout arrives, stay in a basement or concrete core for 24 hours, turn off HVAC, remove outer clothing (removes up to 90% of radioactive material).","m":{"nuclear":1.5,"bio":0.5,"natural":0.5,"climate":0.5,"ai":0.25},"links":[["Ready.gov radiation","https://www.ready.gov/radiation"]]},
+  {"name":"Family contact plan + emergency alerts","cost":"Free","why":"Agree in advance how your household will reconnect if phones fail. Turn on emergency alerts, choose meeting points, and nominate someone outside your area who can relay messages.","detail":"Ready.gov: several ways to receive alerts (FEMA App, local alerts) plus an out-of-state contact. Finland lists knowing where to get reliable information as a preparedness pillar.","m":{"natural":0.5,"bio":0.5,"nuclear":0.5,"grid":0.5,"climate":0.5,"ai":0.25},"links":[["Ready.gov Make a Plan","https://www.ready.gov/make-a-plan"],["Finland 72 hours","https://72tuntia.fi/en/"]]},
+  {"name":"Offline backup of irreplaceable data (cold storage)","cost":"Low","why":"Keep an offline copy of what cannot be replaced — photos, identity documents, records and important files — on a drive that is normally disconnected. Refresh it occasionally.","detail":"John-Clark Levin: back up irreplaceable data to drives not connected to the internet, since powerful AI raises the risk of destructive cyberattacks on cloud and local data. About $50–100.","m":{"grid":1,"ai":1,"natural":0.5},"links":[["Levin, practical AGI preparation","https://www.lesswrong.com/posts/DHvymwaGXHwwrwZQP/eleven-practical-ways-to-prepare-for-agi"]]},
+  {"name":"Emergency fund; keep saving, stay financially intact","cost":"Opportunity cost","why":"Keep liquid savings if you can. Accessible money buys time during job disruption, evacuation, shortages or a period when you cannot work. Do not undermine your basic financial stability in order to prep.","detail":"Todd and Zvi: savings keep options open, and Zvi specifically says to stay \"financially intact, in case you are later offered leverage\". Enough to live on if work stops for months.","m":{"bio":0.5,"natural":0.5,"nuclear":0.5,"grid":0.5,"climate":0.5,"ai":1},"links":[["Todd on preparing for AGI","https://benjamintodd.substack.com/p/how-can-an-ordinary-person-prepare"],["Zvi, practical advice for the worried","https://thezvi.substack.com/p/ai-practical-advice-for-the-worried"]]},
+  {"name":"Community ties and psychological resilience; live a normal life","cost":"Free","why":"Invest in people, not just supplies. Help from neighbours, friends and local groups is useful in almost every disruption, and it improves ordinary life too. Preparation should support a normal life, not replace it.","detail":"Zvi: burnout and existential angst \"are not helpful\". Finland makes psychological resilience a formal preparedness module. Todd: seek out people willing to act early — in COVID that mattered.","m":{"natural":1,"bio":1,"nuclear":1,"grid":1,"climate":1,"ai":1},"links":[["Zvi, practical advice for the worried","https://thezvi.substack.com/p/ai-practical-advice-for-the-worried"],["Todd on preparing for AGI","https://benjamintodd.substack.com/p/how-can-an-ordinary-person-prepare"],["Finland 72 hours","https://72tuntia.fi/en/"]]},
+  {"name":"Cooling plan: window AC or shading, know local cooling centres","cost":"Low–moderate","why":"Make sure you have one genuinely cool room and know where public cooling spaces are. Fans alone may not be enough in extreme heat, especially for older people, young children and anyone who is unwell.","detail":"Ready.gov: extreme heat causes \"the highest number of annual deaths among all weather-related hazards\"; do not rely on fans alone. Heat waves also knock out power, which is why this overlaps with grid prep.","m":{"climate":2,"grid":0.5},"links":[["Ready.gov heat","https://www.ready.gov/heat"]]},
+  {"name":"Check flood, fire and heat exposure — and your insurance","cost":"Low","why":"Check the risks at your actual address instead of relying on an area being called “safe”. Review flood and fire cover, exclusions and renewal conditions, because insurance availability can change quickly.","detail":"First Street Foundation found 14.6 million US properties at substantial flood risk, 1.7× FEMA's estimate, with 5.9 million owners outside FEMA zones and unaware. \"Climate havens\" are overstated — the Fifth National Climate Assessment says \"there's nowhere you can truly hide\". Meanwhile insurers are retreating: State Farm non-renewed about 30,000 California home policies in 2024. Federal flood insurance caps at $250,000 building / $100,000 contents and does not auto-renew.","m":{"climate":2},"links":[["First Street flood assessment (PDF)","https://assets.firststreet.org/media/first_street_foundation__first_national_flood_risk_assessment.pdf"],["FloodSmart / NFIP","https://www.floodsmart.gov/get-insured/buy-a-policy"],["Grist on climate havens","https://grist.org/migration/climate-havens-national-climate-assessment-midwest-migration/"],["State Farm California update","https://newsroom.statefarm.com/update-on-california/"]]},
+  {"name":"Extra water storage, backup power, keep the tank half full","cost":"Moderate","why":"Add a way to ride out a longer outage: more stored water, backup charging or power for essentials, basic heating or cooling, and do not let your vehicle sit nearly empty.","detail":"Ready.gov space weather: gas stations rely on electricity, so keep the tank above half and know your manual garage release. Finland: know how to cope in a home that is getting colder. Water jugs ~$15–30, power station $300+.","m":{"grid":2,"nuclear":0.5,"climate":0.5,"ai":0.25},"links":[["Ready.gov Space Weather","https://www.ready.gov/space-weather"],["Finland 72 hours","https://72tuntia.fi/en/"]]},
+  {"name":"Use frontier AI models; learn AI-complementary skills","cost":"Moderate","why":"Make AI part of your work now rather than watching it from outside. Build judgment, communication, management, hands-on and problem-solving skills that become more valuable alongside automated systems.","detail":"Todd: skills that rise in value before AGI include applying AI to real problems, social and management skills, and complex physical work. About 60% of jobs in advanced economies are AI-exposed (International AI Safety Report 2026).","m":{"ai":2},"links":[["Todd on preparing for AGI","https://benjamintodd.substack.com/p/how-can-an-ordinary-person-prepare"],["International AI Safety Report 2026","https://internationalaisafetyreport.org/publication/international-ai-safety-report-2026"]]},
+  {"name":"Reduce accident and lifestyle risk (driving, etc.)","cost":"Free","why":"Do not let everyday risks dwarf the exotic ones. Safer driving, avoiding impairment, and looking after mental health are unglamorous forms of preparedness that protect your chance of being around for whatever future arrives.","detail":"Levin: for Americans aged 15–44, about 58% of mortality comes from accidents, suicide and homicide; if the future is long or strange, arriving at it intact is worth real effort.","m":{"ai":1.5},"links":[["Levin, practical AGI preparation","https://www.lesswrong.com/posts/DHvymwaGXHwwrwZQP/eleven-practical-ways-to-prepare-for-agi"]]},
+  {"name":"Longer stay-home stock: 1–3 months of food and meds","cost":"High","why":"Once the basics are covered, consider building one to three months of shelf-stable food and essential medication. Rotate what you store, and buy food people will actually eat.","detail":"Todd: several months of supplies covers waiting out fallout, a severe pandemic or a broken supply chain. Roughly $300–1,000 per person in bulk staples; needs storage and rotation.","m":{"nuclear":1.5,"bio":1.5,"natural":1,"grid":1,"ai":0.5},"links":[["Todd on preparing for AGI","https://benjamintodd.substack.com/p/how-can-an-ordinary-person-prepare"]]},
+  {"name":"Live away from likely nuclear targets","cost":"High","why":"Treat this as part of a broader decision about where to live, not as a purchase. Distance from military targets and major cities can reduce blast and fallout exposure, but it will not shield you from a global food shock.","detail":"Blast and fallout are local even when the famine from nuclear winter is global. Counterforce targets (missile fields, submarine bases) and major cities are the exposed areas. Note: no rigorous open \"safest region\" analysis exists — March 2026 \"safest states\" articles are aggregator-grade; the Federation of American Scientists Nuclear Targeting Project is the best primary source for what would actually be hit.","m":{"nuclear":2},"links":[["FAS Nuclear Targeting Project","https://fas.org/initiative/nuclear-targeting-project/"],["NUKEMAP","https://nuclearsecrecy.com/nukemap/"]]},
+  {"name":"Potassium iodide (KI) tablets for the family","cost":"Low","why":"KI is narrow protection, not a general radiation shield: it protects only the thyroid against radioactive iodine. If you keep it, store it with clear instructions and use it only when authorities advise it.","detail":"Protects only the thyroid, and only from radioactive iodine — nothing else. The CDC is explicit: take it only on the advice of public health or emergency management officials, since unsupposed dosing carries its own risks. FDA-approved 65 mg and 130 mg tablets (ThyroSafe) are sold over the counter; Ready.gov does not mention KI at all.","m":{"nuclear":1.5},"links":[["CDC KI guidance","https://www.cdc.gov/radiation-emergencies/infographic/potassium-iodide.html"],["NRC KI FAQ","https://www.nrc.gov/about-nrc/emerg-preparedness/about-emerg-preparedness/potassium-iodide/ki-faq"]]},
+  {"name":"Off-grid family comms: FRS/GMRS radios, maybe a ham licence","cost":"Low","why":"Have a way to contact nearby family without the mobile network. Licence-free handheld radios are the simple option; higher-power radio services can offer more range if you obtain the required licence.","detail":"Cell networks fail first in outages and are targeted in conflict. FRS handhelds need no licence; GMRS needs a $35 FCC licence (no exam, 10-year term) that covers your household; an amateur radio Technician licence is a 35-question exam, also $35. Costs are roughly $25–70 per radio pair.","m":{"grid":1,"nuclear":0.75,"natural":0.5},"links":[["eCFR FRS rules","https://www.ecfr.gov/current/title-47/chapter-I/subchapter/D/part-95/subpart-B"],["ARRL getting licensed","https://www.arrl.org/getting-licensed"]]},
+  {"name":"Southern Hemisphere residency option (AU, NZ, Iceland)","cost":"Very high","why":"Treat this as a long-term life decision, not an emergency purchase. Parts of Australia and New Zealand look comparatively resilient in nuclear-winter scenarios, but they would still depend on fuel, parts, fertiliser and functioning institutions.","detail":"Boyd & Wilson (Risk Analysis, 2023): Australia, New Zealand, Iceland, the Solomon Islands and Vanuatu rank most resilient against nuclear winter. They warn even these could face breakdown without imported diesel, fertiliser and parts — best placed, not safe.","m":{"nuclear":2},"links":[["Boyd & Wilson 2023 (Risk Analysis)","https://doi.org/10.1111/risa.14072"]]},
+  {"name":"Work on, donate to, or advocate for risk reduction","cost":"Variable","why":"If you think the largest risks are high, the biggest lever is reducing them rather than only protecting yourself. Consider safety-focused work, policy or research, volunteering, advocacy, or donating part of your income.","detail":"Todd: in extinction scenarios no personal prep helps; this is the only lever. 80,000 Hours lists four routes — government, research, communications, field-building. Named funds: Founders Pledge Global Catastrophic Risks Fund, Longview, Nuclear Threat Initiative, ALLFED, Blueprint Biosecurity.","m":{"ai":2,"bio":1,"nuclear":1,"natural":0.5,"grid":0.5,"climate":0.5},"links":[["80,000 Hours problem profiles","https://80000hours.org/problem-profiles/nuclear-security/"],["Blueprint Biosecurity","https://blueprintbiosecurity.org/"]],"contrib":true},
+];
+
+// m = how much this action helps each derived risk (2 = very strong, 1 = helps, 0.5 = partial).
+// Weights are this site's reading of the action-by-scenario matrix in the research notes;
+// no source ranks household actions by cost-effectiveness.
+const RISK_LABEL = { ai: 'AI', bio: 'Bio', nuclear: 'Nuclear', natural: 'Pandemic (natural)', grid: 'Grid', climate: 'Climate' };
+const COST_SYM = { 'Free': '$', 'Low': '$$', 'Low–moderate': '$$', 'Moderate': '$$$', 'Opportunity cost': '$$$', 'High': '$$$$', 'Very high': '$$$$', 'Variable': '$$' };
+
+const PRESETS = [
+  { name: 'Superforecasters, 2022 tournament', v: 0.38 },
+  { name: 'Machine learning researcher median (2023)', v: 5 },
+  { name: 'Toby Ord (2020)', v: 10 },
+  { name: 'Safety-researcher mean (~2021)', v: 30 },
+  { name: 'High-doom camp', v: 70 },
+];
+
+const sl = document.getElementById('sliders');
+PREMISES.forEach(it => {
+  const given = it.parent ? `<div class="given">given: ${PREMISES.find(p => p.id === it.parent).name}</div>` : '';
+  sl.insertAdjacentHTML('beforeend', `
+    <div class="premise ${it.parent ? 'child' : ''}" id="p-${it.id}">
+      ${given}
+      <label><span class="headline">${it.name}</span> <span id="v-${it.id}"></span></label>
+      <input type="range" id="${it.id}" min="0" max="100" step="1" value="${it.def}">
+      <details><summary>What others say</summary><ul class="says">${it.says.map(s => `<li>${s}</li>`).join('')}</ul></details>
+      <details><summary>Definition</summary><div class="says">${it.defn}</div></details>
+    </div>`);
+  document.getElementById(it.id).addEventListener('input', render);
+});
+
+const pct = p => p >= 10 ? p.toFixed(1) + '%' : p.toFixed(2) + '%';
+const odds = p => p > 0 ? '1 in ' + Math.round(100 / p).toLocaleString() : '—';
+
+function render() {
+  const v = {};
+  PREMISES.forEach(it => {
+    v[it.id] = +document.getElementById(it.id).value / 100;
+    document.getElementById('v-' + it.id).textContent = Math.round(v[it.id] * 100) + '%';
+  });
+
+  PREMISES.filter(it => it.parent).forEach(it => {
+    const parentOn = v[it.parent] > 0;
+    const el = document.getElementById('p-' + it.id);
+    el.classList.toggle('off', !parentOn);
+    document.getElementById(it.id).disabled = !parentOn;
+  });
+
+  const uplift = v.build * 0.6;
+  const shockOrWar = 1 - (1 - v.shock) * (1 - 0.9 * v.war);
+
+  const d = {
+    ai: v.build * v.race * v.align * v.power * v.escalate * 100,
+    bio: uplift * v.race * v.intent * v.lethal * 100,
+    nuclear: v.war * v.nuke * v.exch * 100,
+    natural: v.natpan * v.lethal * 100,
+    grid: shockOrWar * v.fragile * 100,
+    climate: v.emiss * v.nofix * 100,
+  };
+  const total = (1 - Object.values(d).reduce((a, p) => a * (1 - p / 100), 1)) * 100;
+  const nearest = PRESETS.reduce((a, b) => Math.abs(Math.log((b.v + 1e-9) / (d.ai + 1e-9))) < Math.abs(Math.log((a.v + 1e-9) / (d.ai + 1e-9))) ? b : a);
+
+  document.getElementById('results').innerHTML = `
+    <tr><th>Category</th><th>Chain of premises</th><th style="text-align:right">Risk</th></tr>
+    ${[
+      ['AI existential', 'build × race × align × power × escalate', d.ai],
+      ['Engineered pandemic', 'build(uplift) × race × intent × lethal', d.bio],
+      ['Nuclear catastrophe', 'war × nuke × exch', d.nuclear],
+      ['Natural pandemic', 'natpan × lethal', d.natural],
+      ['Grid collapse', '(war ∨ shock) × fragile', d.grid],
+      ['Climate catastrophe', 'emiss × nofix', d.climate],
+    ].map(([n, f, p]) => `
+      <tr><td>${n}</td><td class="formula">${f}</td><td class="num">${pct(p)}<br><small>${odds(p)}</small></td></tr>`).join('')}
+    <tr><td colspan="3" style="border:0;color:#555;font-size:.85em;padding-top:.5rem">Your AI premises land closest to: <strong>${nearest.name}</strong> (${nearest.v}%)</td></tr>`;
+
+  document.getElementById('total').textContent = `${pct(total)} (${odds(total)})`;
+
+  const scored = ACTIONS.map(a => {
+    const parts = Object.entries(a.m)
+      .filter(([k, w]) => w > 0 && d[k] > 0)
+      .map(([k, w]) => ({ k, w, contrib: d[k] * w }))
+      .sort((x, y) => y.contrib - x.contrib);
+    const matter = (1 - parts.reduce((prod, p) => prod * (1 - Math.min(1, (d[p.k] / 100) * (p.w / 2))), 1)) * 100;
+    return { a, matter, parts };
+  }).filter(x => x.matter > 0)
+    .sort((x, y) => y.matter - x.matter);
+
+  document.getElementById('actions').innerHTML = scored.map(({ a, matter, parts }, i) => {
+    const cost = COST_SYM[a.cost] ?? '$$';
+    const chips = parts.length
+      ? parts.map(p => `<span class="chip">${RISK_LABEL[p.k]} ${pct(d[p.k])}${p.w !== 1 ? ` ×${p.w}` : ''}</span>`).join('')
+      : '<span class="chip dim">helps in most scenarios</span>';
+    const sources = `<details><summary>sources</summary><div class="says">${a.detail}</div>${a.links?.length ? `<div class="refs">${a.links.map(([t, u]) => `<a href="${u}">${t}</a>`).join(' · ')}</div>` : ''}</details>`;
+    return `<div class="action">
+      <span class="rank">#${i + 1}</span><strong>${a.name}</strong>
+      <details class="matter"><summary><span class="pct">${pct(matter)} likely to matter</span><span class="det">› details</span></summary><div class="chips">${chips}</div></details>
+      <div class="cost">${cost}</div>
+      <div class="why">${a.why}</div>${sources}
+    </div>`;
+  }).join('');
+}
+render();
+</script>
+</body>
+</html>
