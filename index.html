@@ -47,11 +47,69 @@
   .refs a { color: #666; }
   .action a { color: #556; }
   footer { margin-top: 2rem; color: #666; font-size: .85em; }
+  .modebar { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; margin: 1.4rem 0 0; padding: .5rem 0; border-bottom: 1px solid #ddd; position: sticky; top: 0; background: #fff; z-index: 5; }
+  .tab { font-size: .85em; color: #555; text-decoration: none; padding: 4px 11px; border-radius: 999px; }
+  .tab:hover { background: #f0f0f5; }
+  .tab.on { background: #222; color: #fff; }
+  .spacer { flex: 1; }
+  .live { font-size: .8em; color: #777; font-variant-numeric: tabular-nums; margin-right: .3rem; }
+  .live strong { color: #222; }
+  .view { display: none; }
+  .view.on { display: block; }
+  .btn { font: inherit; font-size: .85em; padding: 5px 13px; border-radius: 999px; border: 1px solid #ccc; background: #fff; color: #333; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn:hover { border-color: #777; }
+  .btn.primary { background: #222; border-color: #222; color: #fff; }
+  button.ghost { font: inherit; font-size: .8em; padding: 4px 11px; border-radius: 999px; border: 1px solid #ccc; background: #fff; color: #555; cursor: pointer; }
+  button.ghost:hover { border-color: #777; color: #222; }
+  .qhead { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; margin-top: 1.6rem; color: #888; font-size: .85em; }
+  .qhead a { color: #666; }
+  .qprog { height: 4px; background: #eee; border-radius: 2px; margin: .6rem 0 1.2rem; overflow: hidden; }
+  .qprog i { display: block; height: 100%; background: #222; transition: width .2s; }
+  .qcard { border: 1px solid #ddd; border-radius: 8px; padding: 1rem 1.1rem; }
+  .qcard.off { opacity: .55; }
+  .qtitle { font-weight: 600; font-size: 1.08em; line-height: 1.35; }
+  .readout { font-size: .88em; color: #555; margin: .7rem 0 .2rem; }
+  .readout strong { color: #222; font-variant-numeric: tabular-nums; }
+  .bands { display: flex; flex-wrap: wrap; gap: .45rem; margin: .7rem 0 .3rem; }
+  .band { flex: 1 1 8rem; font: inherit; text-align: left; padding: .5rem .7rem; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; }
+  .band:hover { border-color: #666; }
+  .band .bl { display: block; font-weight: 600; font-size: .9em; }
+  .band .bv { display: block; color: #888; font-size: .78em; font-variant-numeric: tabular-nums; }
+  .band.on { background: #222; border-color: #222; color: #fff; }
+  .band.on .bv { color: #bbb; }
+  .tune { margin-top: .5rem; }
+  .tune summary { font-size: .82em; color: #666; }
+  .tune .hint { color: #999; font-size: .78em; }
+  .qnav { display: flex; align-items: center; gap: .5rem; margin: 1.3rem 0 .3rem; }
+  .qitems { margin-top: .5rem; }
+  .qitem { display: flex; gap: .7rem; align-items: baseline; padding: .45rem 0; border-top: 1px solid #eee; font-size: .92em; color: #333; text-decoration: none; }
+  .qitem:hover .qn { text-decoration: underline; }
+  .qitem .qi { color: #aaa; font-size: .85em; font-variant-numeric: tabular-nums; min-width: 1.6rem; }
+  .qitem .qn { flex: 1; }
+  .qitem .qa { white-space: nowrap; font-variant-numeric: tabular-nums; color: #444; font-size: .92em; }
+  .qitem.todo .qa { color: #aaa; }
+  .qitem.off { opacity: .45; }
+  .qsum { margin-top: 1.4rem; padding-top: .8rem; border-top: 1px solid #ddd; }
+  .qsum table { margin-top: .3rem; }
+  .qsum td, .qsum th { font-size: .92em; }
+  .note { color: #999; font-size: .82em; margin-top: .4rem; }
 </style>
 </head>
 <body>
 <h1>Prep for p(doom) with your own assumptions</h1>
+<p class="sub">Answer each assumption with your own judgement — very unlikely to very likely — and see what your answers imply for the risks, and for the prep that follows. Everything stays in your browser; your answers are saved on this device.</p>
 
+<div class="modebar" id="modebar">
+  <a href="#/quiz" class="tab" data-view="quiz">Quiz</a>
+  <a href="#/results" class="tab" data-view="results">Results &amp; prep</a>
+  <span class="spacer"></span>
+  <span class="live" id="live"></span>
+  <button class="ghost" id="reset">Reset</button>
+</div>
+
+<section class="view" id="view-quiz"></section>
+
+<section class="view" id="view-results">
 <h2 id="assumptions-title">Assumptions</h2>
 <section id="sliders" aria-labelledby="assumptions-title"></section>
 
@@ -68,6 +126,7 @@
 
 <h2>Recommended prep</h2>
 <section id="actions"></section>
+</section>
 
 <footer>
   <details>
@@ -241,6 +300,53 @@ function ancestorOff(it, v) {
   return false;
 }
 
+// The four answers are absolute probabilities, so "very likely" means the same
+// thing on every question. Every premise keeps its researched default until you answer it.
+const BANDS = [
+  { id: 'vu', label: 'Very unlikely', value: 10 },
+  { id: 'u',  label: 'Unlikely',      value: 30 },
+  { id: 'l',  label: 'Likely',        value: 70 },
+  { id: 'vl', label: 'Very likely',   value: 90 },
+];
+const BAND_LABEL = { vu: 'Very unlikely', u: 'Unlikely', l: 'Likely', vl: 'Very likely', custom: 'Custom' };
+const bandValue = b => b.value;
+const STORE_KEY = 'pdoop-quiz-v2';
+
+const STATE = loadState();
+function loadState() {
+  const s = { v: {}, band: {} };
+  PREMISES.forEach(it => { s.v[it.id] = it.def; });
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (raw && raw.v) PREMISES.forEach(it => {
+      const n = Math.round(+raw.v[it.id]);
+      if (Number.isFinite(n)) s.v[it.id] = Math.max(0, Math.min(100, n));
+      // A fine-tuned number counts as an answer, so it survives a reload as 'custom'.
+      if (raw.band && BAND_LABEL[raw.band[it.id]]) s.band[it.id] = raw.band[it.id];
+    });
+  } catch (e) { /* first visit, or storage blocked */ }
+  return s;
+}
+function saveState() { try { localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); } catch (e) { /* private mode */ } }
+function setAnswer(id, n, band) {
+  STATE.v[id] = Math.max(0, Math.min(100, Math.round(n)));
+  if (band) STATE.band[id] = band; else delete STATE.band[id];
+  saveState(); render();
+}
+function clearAnswer(id) {
+  const it = PREMISES.find(p => p.id === id);
+  STATE.v[id] = it.def;
+  delete STATE.band[id];
+  saveState(); render();
+}
+function resetAll() {
+  PREMISES.forEach(it => { STATE.v[it.id] = it.def; delete STATE.band[it.id]; });
+  saveState(); render();
+}
+const values = () => Object.fromEntries(PREMISES.map(it => [it.id, STATE.v[it.id] / 100]));
+const isAnswered = it => !!STATE.band[it.id];
+const answeredCount = () => PREMISES.filter(isAnswered).length;
+
 const sl = document.getElementById('sliders');
 PREMISES.forEach(it => {
   const d = depthOf(it);
@@ -253,7 +359,8 @@ PREMISES.forEach(it => {
       <details><summary>What others say</summary><ul class="says">${it.says.map(s => `<li>${s}</li>`).join('')}</ul></details>
       <details><summary>Definition</summary><div class="says">${it.defn}</div></details>
     </div>`);
-  document.getElementById(it.id).addEventListener('input', render);
+  const range = document.getElementById(it.id);
+  range.addEventListener('input', () => setAnswer(it.id, +range.value, 'custom'));
 });
 
 const pct = p => p >= 10 ? p.toFixed(1) + '%' : p.toFixed(2) + '%';
@@ -265,21 +372,7 @@ const CHAIN_LABEL = {
   replace: 'AI replaces human workforce', lockin: 'Control locked in',
 };
 
-function render() {
-  const v = {};
-  PREMISES.forEach(it => {
-    v[it.id] = +document.getElementById(it.id).value / 100;
-    document.getElementById('v-' + it.id).textContent = Math.round(v[it.id] * 100) + '%';
-  });
-
-  PREMISES.filter(it => it.parent).forEach(it => {
-    const blocked = ancestorOff(it, v);
-    const el = document.getElementById('p-' + it.id);
-    el.classList.toggle('off', blocked);
-    document.getElementById(it.id).disabled = blocked;
-  });
-
-
+function derive(v) {
   const d = {
     ai_control: v.build * v.race * v.align * v.power * v.escalate * 100,
     ai_power: v.build * v.replace * v.lockin * 100,
@@ -288,6 +381,26 @@ function render() {
     grid: v.shock * v.fragile * 100,
   };
   const total = (1 - Object.values(d).reduce((a, p) => a * (1 - p / 100), 1)) * 100;
+  return { d, total };
+}
+
+function render() {
+  const v = values();
+  const { d, total } = derive(v);
+
+  PREMISES.forEach(it => {
+    const range = document.getElementById(it.id);
+    if (+range.value !== STATE.v[it.id]) range.value = STATE.v[it.id];
+    document.getElementById('v-' + it.id).textContent = Math.round(v[it.id] * 100) + '%';
+  });
+
+  PREMISES.filter(it => it.parent).forEach(it => {
+    const blocked = ancestorOff(it, v);
+    document.getElementById('p-' + it.id).classList.toggle('off', blocked);
+    document.getElementById(it.id).disabled = blocked;
+  });
+
+  document.getElementById('live').innerHTML = `At least one catastrophe: <strong>${pct(total)}</strong>`;
 
   const t = (label, x) => `${label} ${Math.round(x * 100)}%`;
   const P = id => t(CHAIN_LABEL[id], v[id]);
@@ -329,8 +442,187 @@ function render() {
       <div class="why">${a.why}</div>${sources}
     </div>`;
   }).join('');
+
+  renderQuiz(v, d, total);
 }
-render();
+
+const answerText = it => {
+  const val = STATE.v[it.id], b = STATE.band[it.id];
+  if (b === 'custom') return `Custom · ${val}%`;
+  if (b) return `${BAND_LABEL[b]} · ${val}%`;
+  return `Not answered · default ${it.def}%`;
+};
+const qProg = () => {
+  const done = answeredCount();
+  return `<div class="qprog"><i style="width:${Math.round(done / PREMISES.length * 100)}%"></i></div>`;
+};
+const qSumRows = (d, total) => `
+      <tr><th>Category</th><th style="text-align:right">Risk</th></tr>
+      ${Object.keys(d).sort((a, b) => d[b] - d[a])
+        .map(k => `<tr><td>${RISK_LABEL[k]}</td><td class="num">${pct(d[k])}</td></tr>`).join('')}
+      <tr><td><strong>At least one catastrophe</strong></td><td class="num"><strong>${pct(total)}</strong></td></tr>`;
+const qSummary = (d, total) => `
+  <div class="qsum">
+    <h2 style="margin-top:0">What your answers imply</h2>
+    <table id="q-sum">${qSumRows(d, total)}</table>
+    <div><a class="btn" href="#/results" style="margin-top:.7rem">See the full breakdown and recommended prep →</a></div>
+  </div>`;
+
+function quizListHTML(v, d, total) {
+  const done = answeredCount();
+  const target = PREMISES.find(it => !isAnswered(it)) || PREMISES[0];
+  return `
+    <div class="qhead"><span id="q-count">${done} of ${PREMISES.length} assumptions answered</span><span class="spacer"></span><a href="#/results">fine-tune with sliders</a></div>
+    ${qProg()}
+    <div class="qitems" id="q-items">
+      ${PREMISES.map((it, i) => qItemHTML(it, i, v)).join('')}
+    </div>
+    <div style="margin-top:1.2rem"><a class="btn primary" id="q-continue" href="#/quiz/${target.id}">${done ? 'Continue' : 'Start the quiz'} → ${target.name}</a></div>
+    ${qSummary(d, total)}`;
+}
+const qItemHTML = (it, i, v) => `
+  <a class="qitem ${isAnswered(it) ? '' : 'todo'} ${it.parent && ancestorOff(it, v) ? 'off' : ''}" href="#/quiz/${it.id}" id="qi-${it.id}">
+    <span class="qi">${i + 1}</span><span class="qn">${it.name}</span><span class="qa" id="qa-${it.id}">${answerText(it)}</span>
+  </a>`;
+
+function quizQuestionHTML(it, v) {
+  const i = PREMISES.indexOf(it);
+  const prev = PREMISES[i - 1], next = PREMISES[i + 1];
+  const d = depthOf(it);
+  return `
+    <div class="qhead"><span id="q-count">Assumption ${i + 1} of ${PREMISES.length}</span><span class="spacer"></span><a href="#/quiz">all answers</a></div>
+    ${qProg()}
+    <div class="qcard ${d ? 'child' : ''}" id="q-card">
+      ${it.parent ? `<div class="given">Assuming that: ${PREMISES.find(p => p.id === it.parent).name}</div>` : ''}
+      <div class="qtitle">${it.name}</div>
+      <div class="note" id="q-blocked" style="display:none">An assumption this depends on is set to 0%, so this one does not affect your results.</div>
+      <div class="readout" id="q-readout"></div>
+      <div class="bands" id="q-bands">
+        ${BANDS.map(b => `<button class="band" data-band="${b.id}" id="qb-${b.id}"><span class="bl">${b.label}</span><span class="bv">${b.value}%</span></button>`).join('')}
+      </div>
+      <details class="tune" id="q-tune">
+        <summary>Fine-tune the exact number</summary>
+        <input type="range" id="q-slider" min="0" max="100" step="1">
+        <div class="hint">Researched default: <strong>${it.def}%</strong> — kept until you answer. 0% switches off everything that depends on this assumption. <button class="btn" id="q-defbtn" style="margin-left:.3rem">Back to researched default</button></div>
+      </details>
+      <details><summary>What others say</summary><ul class="says">${it.says.map(s => `<li>${s}</li>`).join('')}</ul></details>
+      <details><summary>Definition</summary><div class="says">${it.defn}</div></details>
+    </div>
+    <div class="qnav">
+      <a class="btn" href="#/quiz/${prev ? prev.id : ''}"${prev ? '' : ' style="visibility:hidden"'}>← Back</a>
+      <span class="spacer"></span>
+      ${next ? `<a class="btn primary" href="#/quiz/${next.id}">Next →</a>` : `<a class="btn primary" href="#/results">See results →</a>`}
+    </div>
+    <div class="note">Keys 1–4 pick an answer, ← → move between assumptions.</div>`;
+}
+
+function renderQuiz(v, d, total) {
+  const box = document.getElementById('view-quiz');
+  const key = PAGE.q ? 'q:' + PAGE.q : 'list';
+  if (box.dataset.key !== key) {
+    box.dataset.key = key;
+    box.innerHTML = PAGE.q ? quizQuestionHTML(PREMISES.find(p => p.id === PAGE.q), v) : quizListHTML(v, d, total);
+    wireQuiz();
+  }
+  updateQuiz(v, d, total);
+}
+
+function wireQuiz() {
+  document.querySelectorAll('#q-bands .band').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const b = BANDS.find(x => x.id === btn.dataset.band);
+      setAnswer(PAGE.q, bandValue(b), b.id);
+    });
+  });
+  const slider = document.getElementById('q-slider');
+  if (slider) slider.addEventListener('input', () => setAnswer(PAGE.q, +slider.value, 'custom'));
+  const defbtn = document.getElementById('q-defbtn');
+  if (defbtn) defbtn.addEventListener('click', () => clearAnswer(PAGE.q));
+}
+
+function updateQuiz(v, d, total) {
+  const box = document.getElementById('view-quiz');
+  const done = answeredCount();
+  const count = document.getElementById('q-count');
+  if (count && !PAGE.q) count.textContent = `${done} of ${PREMISES.length} assumptions answered`;
+  const bar = box.querySelector('.qprog i');
+  if (bar) bar.style.width = Math.round(done / PREMISES.length * 100) + '%';
+
+  if (!PAGE.q) {
+    PREMISES.forEach(it => {
+      const row = document.getElementById('qi-' + it.id);
+      if (!row) return;
+      row.classList.toggle('todo', !isAnswered(it));
+      row.classList.toggle('off', !!(it.parent && ancestorOff(it, v)));
+      document.getElementById('qa-' + it.id).textContent = answerText(it);
+    });
+    const cont = document.getElementById('q-continue');
+    if (cont) {
+      const target = PREMISES.find(it => !isAnswered(it)) || PREMISES[0];
+      cont.setAttribute('href', '#/quiz/' + target.id);
+      cont.textContent = `${done === PREMISES.length ? 'Review' : done ? 'Continue' : 'Start the quiz'} → ${target.name}`;
+    }
+    const sum = document.getElementById('q-sum');
+    if (sum && sum.innerHTML) sum.innerHTML = qSumRows(d, total);
+    return;
+  }
+
+  const it = PREMISES.find(p => p.id === PAGE.q);
+  const val = STATE.v[it.id], band = STATE.band[it.id];
+  BANDS.forEach(b => {
+    const btn = document.getElementById('qb-' + b.id);
+    if (btn) btn.classList.toggle('on', band === b.id);
+  });
+  const readout = document.getElementById('q-readout');
+  if (readout) readout.innerHTML = !band
+    ? `Not answered yet — the researched default of <strong>${it.def}%</strong> is being used.`
+    : band === 'custom'
+      ? `Your answer: <strong>${val}%</strong> (fine-tuned)`
+      : `Your answer: <strong>${BAND_LABEL[band]}</strong> — ${val}%`;
+  const slider = document.getElementById('q-slider');
+  if (slider && +slider.value !== val) slider.value = val;
+  const card = document.getElementById('q-card');
+  const blocked = !!(it.parent && ancestorOff(it, v));
+  if (card) card.classList.toggle('off', blocked);
+  const note = document.getElementById('q-blocked');
+  if (note) note.style.display = blocked ? '' : 'none';
+}
+
+let PAGE = { view: 'quiz', q: null };
+
+function route() {
+  const seg = (location.hash || '').replace(/^#\/?/, '').split('/').filter(Boolean);
+  let view = 'quiz', q = null;
+  if (seg[0] === 'results') view = 'results';
+  else if (seg[1] && PREMISES.some(p => p.id === seg[1])) q = seg[1];
+  const changed = view !== PAGE.view || q !== PAGE.q;
+  PAGE = { view, q };
+  document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === 'view-' + view));
+  document.querySelectorAll('#modebar .tab').forEach(t => t.classList.toggle('on', t.dataset.view === view));
+  if (changed) { document.getElementById('view-quiz').dataset.key = ''; window.scrollTo(0, 0); }
+  render();
+}
+
+window.addEventListener('hashchange', route);
+document.getElementById('reset').addEventListener('click', resetAll);
+document.addEventListener('keydown', e => {
+  if (PAGE.view !== 'quiz' || !PAGE.q || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target && e.target.matches && e.target.matches('input, textarea')) return;
+  const i = PREMISES.findIndex(p => p.id === PAGE.q), it = PREMISES[i];
+  if (/^[1-4]$/.test(e.key)) {
+    const b = BANDS[+e.key - 1];
+    setAnswer(it.id, bandValue(b), b.id);
+  } else if (e.key === 'ArrowRight' && PREMISES[i + 1]) {
+    location.hash = '#/quiz/' + PREMISES[i + 1].id;
+  } else if (e.key === 'ArrowLeft' && PREMISES[i - 1]) {
+    location.hash = '#/quiz/' + PREMISES[i - 1].id;
+  } else if (e.key === 'ArrowLeft') {
+    location.hash = '#/quiz';
+  }
+});
+
+if (!location.hash) { try { history.replaceState(null, '', '#/quiz'); } catch (e) { location.hash = '#/quiz'; } }
+route();
 </script>
 </body>
 </html>
