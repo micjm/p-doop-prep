@@ -48,9 +48,6 @@
   .action a { color: #556; }
   footer { margin-top: 2rem; color: #666; font-size: .85em; }
   .modebar { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; margin: 1.4rem 0 0; padding: .5rem 0; border-bottom: 1px solid #ddd; position: sticky; top: 0; background: #fff; z-index: 5; }
-  .tab { font-size: .85em; color: #555; text-decoration: none; padding: 4px 11px; border-radius: 999px; }
-  .tab:hover { background: #f0f0f5; }
-  .tab.on { background: #222; color: #fff; }
   .spacer { flex: 1; }
   .live { font-size: .8em; color: #777; font-variant-numeric: tabular-nums; margin-right: .3rem; }
   .live strong { color: #222; }
@@ -68,9 +65,7 @@
   .qcard { border: 1px solid #ddd; border-radius: 8px; padding: 1rem 1.1rem; }
   .qcard.off { opacity: .55; }
   .qtitle { font-weight: 600; font-size: 1.08em; line-height: 1.35; }
-  .readout { font-size: .88em; color: #555; margin: .7rem 0 .2rem; }
-  .readout strong { color: #222; font-variant-numeric: tabular-nums; }
-  .bands { display: flex; flex-wrap: wrap; gap: .45rem; margin: .7rem 0 .3rem; }
+  .bands { display: flex; flex-wrap: wrap; gap: .45rem; margin: .8rem 0 .3rem; }
   .band { flex: 1 1 8rem; font: inherit; text-align: left; padding: .5rem .7rem; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; }
   .band:hover { border-color: #666; }
   .band .bl { display: block; font-weight: 600; font-size: .9em; }
@@ -92,16 +87,15 @@
   .qsum { margin-top: 1.4rem; padding-top: .8rem; border-top: 1px solid #ddd; }
   .qsum table { margin-top: .3rem; }
   .qsum td, .qsum th { font-size: .92em; }
-  .note { color: #999; font-size: .82em; margin-top: .4rem; }
 </style>
 </head>
 <body>
 <h1>Prep for p(doom) with your own assumptions</h1>
-<p class="sub">Answer each assumption with your own judgement — very unlikely to very likely — and see what your answers imply for the risks, and for the prep that follows. Everything stays in your browser; your answers are saved on this device.</p>
+<p class="sub">Set each assumption yourself and see the risks — and the prep — that follow. Saved in your browser.</p>
 
 <div class="modebar" id="modebar">
-  <a href="#/quiz" class="tab" data-view="quiz">Quiz</a>
-  <a href="#/results" class="tab" data-view="results">Results &amp; prep</a>
+  <a href="#/quiz" class="btn primary" id="mode-quiz">Take the quiz</a>
+  <a href="#/sliders" class="btn" id="mode-sliders" style="display:none">← Sliders</a>
   <span class="spacer"></span>
   <span class="live" id="live"></span>
   <button class="ghost" id="reset">Reset</button>
@@ -109,7 +103,7 @@
 
 <section class="view" id="view-quiz"></section>
 
-<section class="view" id="view-results">
+<section class="view on" id="view-sliders">
 <h2 id="assumptions-title">Assumptions</h2>
 <section id="sliders" aria-labelledby="assumptions-title"></section>
 
@@ -448,9 +442,9 @@ function render() {
 
 const answerText = it => {
   const val = STATE.v[it.id], b = STATE.band[it.id];
-  if (b === 'custom') return `Custom · ${val}%`;
+  if (b === 'custom') return `${val}%`;
   if (b) return `${BAND_LABEL[b]} · ${val}%`;
-  return `Not answered · default ${it.def}%`;
+  return `${it.def}% default`;
 };
 const qProg = () => {
   const done = answeredCount();
@@ -465,19 +459,19 @@ const qSummary = (d, total) => `
   <div class="qsum">
     <h2 style="margin-top:0">What your answers imply</h2>
     <table id="q-sum">${qSumRows(d, total)}</table>
-    <div><a class="btn" href="#/results" style="margin-top:.7rem">See the full breakdown and recommended prep →</a></div>
+    <div><a class="btn" href="#/results" style="margin-top:.7rem">Full breakdown &amp; prep →</a></div>
   </div>`;
 
 function quizListHTML(v, d, total) {
   const done = answeredCount();
   const target = PREMISES.find(it => !isAnswered(it)) || PREMISES[0];
   return `
-    <div class="qhead"><span id="q-count">${done} of ${PREMISES.length} assumptions answered</span><span class="spacer"></span><a href="#/results">fine-tune with sliders</a></div>
+    <div class="qhead"><span id="q-count">${done} / ${PREMISES.length} answered</span></div>
     ${qProg()}
     <div class="qitems" id="q-items">
       ${PREMISES.map((it, i) => qItemHTML(it, i, v)).join('')}
     </div>
-    <div style="margin-top:1.2rem"><a class="btn primary" id="q-continue" href="#/quiz/${target.id}">${done ? 'Continue' : 'Start the quiz'} → ${target.name}</a></div>
+    <div style="margin-top:1.2rem"><a class="btn primary" id="q-continue" href="#/quiz/${target.id}">${done ? 'Continue' : 'Start'} →</a></div>
     ${qSummary(d, total)}`;
 }
 const qItemHTML = (it, i, v) => `
@@ -490,20 +484,18 @@ function quizQuestionHTML(it, v) {
   const prev = PREMISES[i - 1], next = PREMISES[i + 1];
   const d = depthOf(it);
   return `
-    <div class="qhead"><span id="q-count">Assumption ${i + 1} of ${PREMISES.length}</span><span class="spacer"></span><a href="#/quiz">all answers</a></div>
+    <div class="qhead"><span id="q-count">${i + 1} / ${PREMISES.length}</span><span class="spacer"></span><a href="#/quiz">All</a></div>
     ${qProg()}
     <div class="qcard ${d ? 'child' : ''}" id="q-card">
       ${it.parent ? `<div class="given">Assuming that: ${PREMISES.find(p => p.id === it.parent).name}</div>` : ''}
       <div class="qtitle">${it.name}</div>
-      <div class="note" id="q-blocked" style="display:none">An assumption this depends on is set to 0%, so this one does not affect your results.</div>
-      <div class="readout" id="q-readout"></div>
       <div class="bands" id="q-bands">
         ${BANDS.map(b => `<button class="band" data-band="${b.id}" id="qb-${b.id}"><span class="bl">${b.label}</span><span class="bv">${b.value}%</span></button>`).join('')}
       </div>
       <details class="tune" id="q-tune">
-        <summary>Fine-tune the exact number</summary>
+        <summary>Fine-tune</summary>
         <input type="range" id="q-slider" min="0" max="100" step="1">
-        <div class="hint">Researched default: <strong>${it.def}%</strong> — kept until you answer. 0% switches off everything that depends on this assumption. <button class="btn" id="q-defbtn" style="margin-left:.3rem">Back to researched default</button></div>
+        <div class="hint">Default ${it.def}% <button class="btn" id="q-defbtn" style="margin-left:.3rem">Reset</button></div>
       </details>
       <details><summary>What others say</summary><ul class="says">${it.says.map(s => `<li>${s}</li>`).join('')}</ul></details>
       <details><summary>Definition</summary><div class="says">${it.defn}</div></details>
@@ -511,9 +503,8 @@ function quizQuestionHTML(it, v) {
     <div class="qnav">
       <a class="btn" href="#/quiz/${prev ? prev.id : ''}"${prev ? '' : ' style="visibility:hidden"'}>← Back</a>
       <span class="spacer"></span>
-      ${next ? `<a class="btn primary" href="#/quiz/${next.id}">Next →</a>` : `<a class="btn primary" href="#/results">See results →</a>`}
-    </div>
-    <div class="note">Keys 1–4 pick an answer, ← → move between assumptions.</div>`;
+      ${next ? `<a class="btn primary" href="#/quiz/${next.id}">Next →</a>` : `<a class="btn primary" href="#/results">Results →</a>`}
+    </div>`;
 }
 
 function renderQuiz(v, d, total) {
@@ -544,7 +535,7 @@ function updateQuiz(v, d, total) {
   const box = document.getElementById('view-quiz');
   const done = answeredCount();
   const count = document.getElementById('q-count');
-  if (count && !PAGE.q) count.textContent = `${done} of ${PREMISES.length} assumptions answered`;
+  if (count && !PAGE.q) count.textContent = `${done} / ${PREMISES.length} answered`;
   const bar = box.querySelector('.qprog i');
   if (bar) bar.style.width = Math.round(done / PREMISES.length * 100) + '%';
 
@@ -560,7 +551,7 @@ function updateQuiz(v, d, total) {
     if (cont) {
       const target = PREMISES.find(it => !isAnswered(it)) || PREMISES[0];
       cont.setAttribute('href', '#/quiz/' + target.id);
-      cont.textContent = `${done === PREMISES.length ? 'Review' : done ? 'Continue' : 'Start the quiz'} → ${target.name}`;
+      cont.textContent = `${done === PREMISES.length ? 'Review' : done ? 'Continue' : 'Start'} →`;
     }
     const sum = document.getElementById('q-sum');
     if (sum && sum.innerHTML) sum.innerHTML = qSumRows(d, total);
@@ -573,32 +564,26 @@ function updateQuiz(v, d, total) {
     const btn = document.getElementById('qb-' + b.id);
     if (btn) btn.classList.toggle('on', band === b.id);
   });
-  const readout = document.getElementById('q-readout');
-  if (readout) readout.innerHTML = !band
-    ? `Not answered yet — the researched default of <strong>${it.def}%</strong> is being used.`
-    : band === 'custom'
-      ? `Your answer: <strong>${val}%</strong> (fine-tuned)`
-      : `Your answer: <strong>${BAND_LABEL[band]}</strong> — ${val}%`;
   const slider = document.getElementById('q-slider');
   if (slider && +slider.value !== val) slider.value = val;
   const card = document.getElementById('q-card');
-  const blocked = !!(it.parent && ancestorOff(it, v));
-  if (card) card.classList.toggle('off', blocked);
-  const note = document.getElementById('q-blocked');
-  if (note) note.style.display = blocked ? '' : 'none';
+  if (card) card.classList.toggle('off', !!(it.parent && ancestorOff(it, v)));
 }
 
-let PAGE = { view: 'quiz', q: null };
+let PAGE = { view: 'sliders', q: null };
 
 function route() {
   const seg = (location.hash || '').replace(/^#\/?/, '').split('/').filter(Boolean);
-  let view = 'quiz', q = null;
-  if (seg[0] === 'results') view = 'results';
-  else if (seg[1] && PREMISES.some(p => p.id === seg[1])) q = seg[1];
+  let view = 'sliders', q = null;
+  if (seg[0] === 'quiz') {
+    view = 'quiz';
+    if (seg[1] && PREMISES.some(p => p.id === seg[1])) q = seg[1];
+  }
   const changed = view !== PAGE.view || q !== PAGE.q;
   PAGE = { view, q };
   document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === 'view-' + view));
-  document.querySelectorAll('#modebar .tab').forEach(t => t.classList.toggle('on', t.dataset.view === view));
+  document.getElementById('mode-quiz').style.display = view === 'quiz' ? 'none' : '';
+  document.getElementById('mode-sliders').style.display = view === 'quiz' ? '' : 'none';
   if (changed) { document.getElementById('view-quiz').dataset.key = ''; window.scrollTo(0, 0); }
   render();
 }
@@ -621,7 +606,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-if (!location.hash) { try { history.replaceState(null, '', '#/quiz'); } catch (e) { location.hash = '#/quiz'; } }
 route();
 </script>
 </body>
